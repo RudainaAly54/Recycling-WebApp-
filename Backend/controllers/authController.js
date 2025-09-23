@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import userModel from '../models/userModel.js';
 import transporter from '../config/nodemailer.js';
+import { EMAIL_VERIFY_TEMPLATE,PASSWORD_RESET_TEMPLATE } from '../config/emailTemplates.js';
 
 // user registeration
 export const register = async (req, res) => {
@@ -131,7 +132,8 @@ export const sendVerifyOtp = async (req, res) => {
       from: `"Recycle App" <${process.env.SENDER_EMAIL}>`,
       to: user.email,
       subject: "Account Verification OTP",
-      text: `Your OTP is ${otp}. Verify your account using this OTP.`,
+     // text: `Your OTP is ${otp}. Verify your account using this OTP.`,
+      html:EMAIL_VERIFY_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}" , user.email)
     };
 
     await transporter.sendMail(mailOption);
@@ -215,6 +217,7 @@ export const sendResetOtp = async (req, res) => {
       to: user.email,
       subject: "Password reset OTP",
       text: `Your OTP is ${otp}. Reset your Password using this OTP.`,
+      html:PASSWORD_RESET_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}" , user.email)
     };
     await transporter.sendMail(mailOption);
 
