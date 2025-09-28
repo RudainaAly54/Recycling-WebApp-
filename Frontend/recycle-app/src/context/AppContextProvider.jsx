@@ -7,44 +7,59 @@ export const AppContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [isLoggedin, setIsLoggedin] = useState(false);
-  const [userData, setUserData] = useState(false);
+  const [userData, setUserData] = useState(null); // ✅ start with null instead of false
 
+  // ✅ Check authentication status
   const getAuthState = async () => {
     try {
       axios.defaults.withCredentials = true;
-      const { data } = await axios.get(backendUrl + "/api/auth/is-auth");
+      const { data } = await axios.get(`${backendUrl}/api/auth/is-auth`);
 
       if (data.success) {
         setIsLoggedin(true);
-        getUserData();
+        await getUserData(); // also fetch user data
+      } else {
+        setIsLoggedin(false);
+        setUserData(null);
       }
     } catch (error) {
+      setIsLoggedin(false);
+      setUserData(null);
+
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
+        console.error(error);
         toast.error("Something went wrong. Please try again.");
       }
     }
   };
 
+  // ✅ Get user data (including role) and return it
   const getUserData = async () => {
     try {
       axios.defaults.withCredentials = true;
-      const { data } = await axios.get(backendUrl + "/api/user/data");
+      const { data } = await axios.get(`${backendUrl}/api/user/data`);
+
       if (data.success) {
         setUserData(data.userData);
+        return data.userData; // ✅ return so Login.jsx can use it
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to fetch user data");
+        return null;
       }
     } catch (error) {
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
+        console.error(error);
         toast.error("Something went wrong. Please try again.");
       }
+      return null;
     }
   };
 
+  // ✅ Run once on app load
   useEffect(() => {
     getAuthState();
   }, []);
@@ -55,8 +70,71 @@ export const AppContextProvider = ({ children }) => {
     setIsLoggedin,
     userData,
     setUserData,
-    getUserData,
+    getUserData, // now returns user object
   };
 
   return <AppContent.Provider value={value}>{children}</AppContent.Provider>;
 };
+
+// import { useState, useEffect } from "react";
+// import { AppContent } from "./AppContext";
+// import axios from "axios";
+// import { toast } from "react-toastify";
+
+// export const AppContextProvider = ({ children }) => {
+//   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+//   const [isLoggedin, setIsLoggedin] = useState(false);
+//   const [userData, setUserData] = useState(false);
+
+//   const getAuthState = async () => {
+//     try {
+//       axios.defaults.withCredentials = true;
+//       const { data } = await axios.get(backendUrl + "/api/auth/is-auth");
+
+//       if (data.success) {
+//         setIsLoggedin(true);
+//         getUserData();
+//       }
+//     } catch (error) {
+//       if (error.response?.data?.message) {
+//         toast.error(error.response.data.message);
+//       } else {
+//         toast.error("Something went wrong. Please try again.");
+//       }
+//     }
+//   };
+
+//   const getUserData = async () => {
+//     try {
+//       axios.defaults.withCredentials = true;
+//       const { data } = await axios.get(backendUrl + "/api/user/data");
+//       if (data.success) {
+//         setUserData(data.userData);
+//       } else {
+//         toast.error(data.message);
+//       }
+//     } catch (error) {
+//       if (error.response?.data?.message) {
+//         toast.error(error.response.data.message);
+//       } else {
+//         toast.error("Something went wrong. Please try again.");
+//       }
+//     }
+//   };
+
+//   useEffect(() => {
+//     getAuthState();
+//   }, []);
+
+//   const value = {
+//     backendUrl,
+//     isLoggedin,
+//     setIsLoggedin,
+//     userData,
+//     setUserData,
+//     getUserData,
+//   };
+
+//   return <AppContent.Provider value={value}>{children}</AppContent.Provider>;
+// };

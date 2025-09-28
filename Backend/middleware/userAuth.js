@@ -1,26 +1,67 @@
 
+// import jwt from "jsonwebtoken";
+
+// const userAuth = async (req, res, next) => {
+//   const { token } = req.cookies;
+//   if (!token) {
+//     return res.json({ success: false, message: "Not Authorized, Login again" });
+//   }
+
+//   try {
+//     const tokenDecode = jwt.verify(token, process.env.JWT_SECRET);
+
+//     if (tokenDecode.id) {
+//       // safe place to store userId
+//       req.userId = tokenDecode.id;
+//     } else {
+//       return res.json({ success: false, message: "Not Authorized, Login again" });
+//     }
+
+//     next(); // go to controller
+//   } catch (error) {
+//     res.json({ success: false, message: error.message });
+//   }
+// };
+
+// export default userAuth;
 import jwt from "jsonwebtoken";
 
-const userAuth = async (req, res, next) => {
-  const { token } = req.cookies;
-  if (!token) {
-    return res.json({ success: false, message: "Not Authorized, Login again" });
-  }
-
+const authMiddleware = async (req, res, next) => {
   try {
-    const tokenDecode = jwt.verify(token, process.env.JWT_SECRET);
+    let token;
 
-    if (tokenDecode.id) {
-      // safe place to store userId
-      req.userId = tokenDecode.id;
-    } else {
-      return res.json({ success: false, message: "Not Authorized, Login again" });
+    // 1. First check cookie
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
-    next(); // go to controller
+    // 2. If not in cookie, check Authorization header
+    if (!token) {
+      const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
+
+    // 3. If still no token → unauthorized
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Not authorized, no token" });
+    }
+
+    // 4. Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.id) {
+      req.userId = decoded.id;   // safe place to store userId
+      req.userRole = decoded.role; // store role if you need role-based auth
+      next();
+    } else {
+      return res.status(401).json({ success: false, message: "Invalid token payload" });
+    }
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    return res.status(401).json({ success: false, message: error.message });
   }
 };
 
-export default userAuth;
+export default authMiddleware;
+
