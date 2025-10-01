@@ -60,9 +60,9 @@ export const AppContextProvider = ({ children }) => {
   };
 
   // ✅ Run once on app load
-  useEffect(() => {
-    getAuthState();
-  }, []);
+ // useEffect(() => {
+    //getAuthState();
+ // }, []);
 
   const value = {
     backendUrl,
